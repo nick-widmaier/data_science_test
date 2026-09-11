@@ -1,0 +1,12 @@
+# Ignore Streamlit local secrets
+.streamlit/secrets.toml
+
+# Ignore database and dataset generated files
+assessment.db
+customer_data.csv
+
+# Ignore Python cache & virtual environment files
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
