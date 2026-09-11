@@ -146,22 +146,20 @@ with tab_sql:
     st.markdown("---")
     st.subheader("📝 SQL Code Editors")
 
-    default_q1 = """SELECT 
-    c.customer_id, c.customer_name, COUNT(o.order_id) AS completed_orders,
-    COALESCE(SUM(o.order_amount), 0) AS total_spent,
-    CASE WHEN COALESCE(SUM(o.order_amount), 0) >= 500 THEN 'Tier 1'
-         WHEN COALESCE(SUM(o.order_amount), 0) >= 100 THEN 'Tier 2'
-         ELSE 'Tier 3' END AS customer_tier
-FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id AND o.status = 'completed'
-GROUP BY c.customer_id, c.customer_name ORDER BY total_spent DESC, c.customer_id ASC;"""
+    default_q1 = """-- Task 1: Customer Spend Tiers
+-- Write your SQL query below:
 
-    default_q2 = """SELECT order_id, customer_id, order_date, order_amount,
-    DENSE_RANK() OVER (PARTITION BY customer_id ORDER BY order_amount DESC) AS amount_rank
-FROM orders WHERE status = 'completed' ORDER BY customer_id ASC, amount_rank ASC;"""
+"""
 
-    default_q3 = """SELECT order_id, customer_id, order_date, order_amount,
-    SUM(order_amount) OVER (PARTITION BY customer_id ORDER BY order_date ASC) AS running_total
-FROM orders WHERE status = 'completed' ORDER BY customer_id ASC, order_date ASC;"""
+    default_q2 = """-- Task 2: Order Ranking per Customer
+-- Write your SQL query below:
+
+"""
+
+    default_q3 = """-- Task 3: Running Cumulative Spend
+-- Write your SQL query below:
+
+"""
 
     st.session_state["sql_q1"] = st.text_area("SQL Editor - Task 1 (Spend Tiers):", value=default_q1, height=130)
     st.session_state["sql_q2"] = st.text_area("SQL Editor - Task 2 (Order Ranking):", value=default_q2, height=130)
@@ -245,28 +243,37 @@ from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 
+# ==============================================================================
+# Task 1: Data Cleaning & Feature Engineering
+# ==============================================================================
 def clean_and_transform_data(df: pd.DataFrame) -> pd.DataFrame:
-    df_clean = df.copy()
-    median_val = df_clean['monthly_spend'].median()
-    df_clean['monthly_spend'] = df_clean['monthly_spend'].fillna(median_val)
-    
-    q1 = df_clean['monthly_spend'].quantile(0.25)
-    q3 = df_clean['monthly_spend'].quantile(0.75)
-    iqr = q3 - q1
-    df_clean['monthly_spend'] = np.clip(df_clean['monthly_spend'], q1 - 1.5 * iqr, q3 + 1.5 * iqr)
-    df_clean['log_account_length'] = np.log1p(df_clean['account_length'])
-    return df_clean
+    """
+    Imputes missing monthly_spend using median, caps outliers using IQR bounds,
+    and creates log_account_length = log1p(account_length).
+    """
+    # TODO: Implement candidate solution
+    pass
 
+# ==============================================================================
+# Task 2: Modular Preprocessing Pipeline
+# ==============================================================================
 def build_preprocessor(num_cols: list[str], cat_cols: list[str]) -> ColumnTransformer:
-    num_pipe = Pipeline([('imputer', SimpleImputer(strategy='median')), ('scaler', StandardScaler())])
-    cat_pipe = Pipeline([('imputer', SimpleImputer(strategy='most_frequent')), ('encoder', OneHotEncoder(drop='first', sparse_output=False))])
-    return ColumnTransformer([('num', num_pipe, num_cols), ('cat', cat_pipe, cat_cols)])
+    """
+    Returns a ColumnTransformer scaling numeric features and one-hot encoding categorical features.
+    """
+    # TODO: Implement candidate solution
+    pass
 
+# ==============================================================================
+# Task 3: Model Training & Evaluation
+# ==============================================================================
 def train_and_evaluate_model(X_train, X_test, y_train, y_test, preprocessor) -> float:
-    clf_pipeline = Pipeline([('preprocessor', preprocessor), ('clf', RandomForestClassifier(n_estimators=50, random_state=42))])
-    clf_pipeline.fit(X_train, y_train)
-    probas = clf_pipeline.predict_proba(X_test)[:, 1]
-    return round(float(roc_auc_score(y_test, probas)), 4)
+    """
+    Combines preprocessor and RandomForestClassifier(n_estimators=50, random_state=42) into a Pipeline,
+    fits training data, and returns ROC-AUC score on test set (rounded to 4 decimal places).
+    """
+    # TODO: Implement candidate solution
+    pass
 '''
 
         st.session_state["python_code"] = st.text_area(
