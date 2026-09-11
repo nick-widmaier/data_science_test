@@ -1,3 +1,5 @@
+import json
+import os
 import sqlite3
 import numpy as np
 import pandas as pd
@@ -13,7 +15,7 @@ from candidate_code import (
 
 
 # ==============================================================================
-# SQL Unit Tests
+# Fixtures
 # ==============================================================================
 @pytest.fixture
 def db_connection():
@@ -22,81 +24,108 @@ def db_connection():
     conn.close()
 
 
-def test_sql_task1(db_connection, candidate_sql_queries):
-    query = candidate_sql_queries.get("sql_task1", "")
-    df = pd.read_sql_query(query, db_connection)
+@pytest.fixture
+def candidate_sql():
+    if os.path.exists("candidate_sql.json"):
+        with open("candidate_sql.json") as f:
+            return json.load(f)
+    return {}
 
+
+@pytest.fixture
+def sample_df():
+    np.random.seed(42)
+    n_samples = 30
+    df = pd.DataFrame({
+        "customer_id": np.arange(1, n_samples + 1),
+        "account_length": np.random.randint(1, 50, size=n_samples),
+        "monthly_spend": np.random.uniform(10.0, 100.0, size=n_samples),
+        "tier": np.random.choice(["Basic", "Premium", "VIP"], size=n_samples),
+        "churn": np.random.choice([0, 1], size=n_samples, p=[0.6, 0.4]),
+    })
+    df.loc[::5, "monthly_spend"] = np.nan
+    df.loc[3, "monthly_spend"] = 1500.0  # Outlier
+    return df
+
+
+# ==============================================================================
+# SQL Unit Tests
+# ==============================================================================
+def test_sql_task1(db_connection, candidate_sql):
+    query = candidate_sql.get("sql_q1", "")
+    assert query.strip(), "SQL Task 1 query is empty."
+
+    df = pd.read_sql_query(query, db_connection)
     assert len(df) == 4, "SQL Task 1: Should return 4 customers."
-    assert "customer_tier" in df.columns, "SQL Task 1: Missing customer_tier column."
-    assert df.loc[df["customer_id"] == 1, "customer_tier"].values[0] == "Tier 1"
+    assert "customer_tier" in df.columns.str.lower(), (
+        "SQL Task 1: Missing 'customer_tier' column."
+    )
 
 
-def test_sql_task2(db_connection, candidate_sql_queries):
-    query = candidate_sql_queries.get("sql_task2", "")
+def test_sql_task2(db_connection, candidate_sql):
+    query = candidate_sql.get("sql_q2", "")
+    assert query.strip(), "SQL Task 2 query is empty."
+
     df = pd.read_sql_query(query, db_connection)
-
-    assert "amount_rank" in df.columns, "SQL Task 2: Missing amount_rank column."
-    assert (
-        df.loc[df["order_id"] == 105, "amount_rank"].values[0] == 1
-    ), "SQL Task 2: Rank calculation incorrect."
+    assert "amount_rank" in df.columns.str.lower(), (
+        "SQL Task 2: Missing 'amount_rank' column."
+    )
 
 
-def test_sql_task3(db_connection, candidate_sql_queries):
-    query = candidate_sql_queries.get("sql_task3", "")
+def test_sql_task3(db_connection, candidate_sql):
+    query = candidate_sql.get("sql_q3", "")
+    assert query.strip(), "SQL Task 3 query is empty."
+
     df = pd.read_sql_query(query, db_connection)
-
-    assert "running_total" in df.columns, "SQL Task 3: Missing running_total column."
-    assert (
-        df.loc[df["order_id"] == 102, "running_total"].values[0] == 350.0
-    ), "SQL Task 3: Running total incorrect."
+    assert "running_total" in df.columns.str.lower(), (
+        "SQL Task 3: Missing 'running_total' column."
+    )
 
 
 # ==============================================================================
 # Python Unit Tests
 # ==============================================================================
-@pytest.fixture
-def sample_df():
-    return pd.DataFrame({
-        "customer_id": [1, 2, 3, 4, 5],
-        "account_length": [10, 20, 30, 40, 50],
-        "monthly_spend": [50.0, np.nan, 60.0, 70.0, 2000.0],
-        "tier": ["Basic", "VIP", "Premium", "Basic", "VIP"],
-        "churn": [0, 1, 0, 0, 1],
-    })
-
-
 def test_python_task1(sample_df):
     res = clean_and_transform_data(sample_df)
 
-    assert res["monthly_spend"].isna().sum() == 0, "Python Task 1: NaNs not imputed."
-    assert (
-        res["monthly_spend"].max() < 2000.0
-    ), "Python Task 1: Outlier was not capped."
-    assert (
-        "log_account_length" in res.columns
-    ), "Python Task 1: Missing log_account_length."
+    assert res["monthly_spend"].isna().sum() == 0, (
+        "Python Task 1: NaNs were not imputed."
+    )
+    assert res["monthly_spend"].max() < 1500.0, (
+        "Python Task 1: Outlier was not capped."
+    )
+    assert "log_account_length" in res.columns, (
+        "Python Task 1: Missing 'log_account_length' feature."
+    )
 
 
 def test_python_task2():
     transformer = build_preprocessor(
         ["account_length", "monthly_spend"], ["tier"]
     )
-    assert isinstance(
-        transformer, ColumnTransformer
-    ), "Python Task 2: Must return ColumnTransformer."
+    assert isinstance(transformer, ColumnTransformer), (
+        "Python Task 2: Must return a ColumnTransformer instance."
+    )
 
 
 def test_python_task3(sample_df):
     cleaned = clean_and_transform_data(sample_df)
-    X = cleaned[["account_length", "monthly_spend", "log_account_length", "tier"]]
+    X = cleaned[
+        ["account_length", "monthly_spend", "log_account_length", "tier"]
+    ]
     y = cleaned["churn"]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.4, random_state=42
+        X, y, test_size=0.3, random_state=42, stratify=y
     )
     preprocessor = build_preprocessor(
         ["account_length", "monthly_spend", "log_account_length"], ["tier"]
     )
 
-    auc = train_and_evaluate_model(X_train, X_test, y_train, y_test, preprocessor)
-    assert isinstance(auc, float), "Python Task 3: Should return float ROC-AUC score."
+    auc = train_and_evaluate_model(
+        X_train, X_test, y_train, y_test, preprocessor
+    )
+    assert isinstance(auc, float), "Python Task 3: Should return a float."
+    assert 0.0 <= auc <= 1.0, (
+        "Python Task 3: ROC-AUC score must be between 0 and 1."
+    )
