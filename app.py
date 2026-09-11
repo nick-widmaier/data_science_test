@@ -48,6 +48,12 @@ def send_submission_via_resend(
 
     resend.api_key = api_key
 
+    status_html = (
+        "<b style='color:green;'>PASSED</b>"
+        if test_passed
+        else "<b style='color:red;'>FAILED / UNCHECKED</b>"
+    )
+
     params = {
         "from": "Assessment Portal <onboarding@resend.dev>",
         "to": [recipient],
@@ -57,7 +63,7 @@ def send_submission_via_resend(
         <h2>Datakaru Candidate Assessment Submission</h2>
         <p><b>Candidate Name:</b> {c_name}</p>
         <p><b>Candidate Email:</b> {c_email}</p>
-        <p><b>Pytest Status:</b> {'<b style="color:green;">PASSED</b>' if test_passed else '<b style="color:red;">FAILED / UNCHECKED</b>'}</p>
+        <p><b>Pytest Status:</b> {status_html}</p>
         <hr>
         <h3>SQL Section Answers</h3>
         <h4>Task 1 (Spend Tiers)</h4>
@@ -275,7 +281,7 @@ with tab_python:
     with p_col_right:
         st.subheader("📝 Python Code Editor")
 
-        py_starter = """import pandas as pd
+        py_starter = '''import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -289,9 +295,9 @@ from sklearn.metrics import roc_auc_score
 # ==============================================================================
 def clean_and_transform_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-        Imputes missing monthly_spend using median, caps outliers using IQR
-        bounds, and creates log_account_length = log1p(account_length).
-"""
+    Imputes missing monthly_spend using median, caps outliers using IQR bounds,
+    and creates log_account_length = log1p(account_length).
+    """
     # TODO: Implement candidate solution
     pass
 
@@ -300,9 +306,8 @@ def clean_and_transform_data(df: pd.DataFrame) -> pd.DataFrame:
 # ==============================================================================
 def build_preprocessor(num_cols: list[str], cat_cols: list[str]) -> ColumnTransformer:
     """
-        Returns a ColumnTransformer scaling numeric features and one-hot
-        encoding categorical features.
-"""
+    Returns a ColumnTransformer scaling numeric features and one-hot encoding categorical features.
+    """
     # TODO: Implement candidate solution
     pass
 
@@ -311,13 +316,12 @@ def build_preprocessor(num_cols: list[str], cat_cols: list[str]) -> ColumnTransf
 # ==============================================================================
 def train_and_evaluate_model(X_train, X_test, y_train, y_test, preprocessor) -> float:
     """
-        Combines preprocessor and RandomForestClassifier(n_estimators=50,
-        random_state=42) into a Pipeline, fits training data, and returns
-        ROC-AUC score on test set (rounded to 4 decimal places).
-"""
+    Combines preprocessor and RandomForestClassifier(n_estimators=50, random_state=42) into a Pipeline,
+    fits training data, and returns ROC-AUC score on test set (rounded to 4 decimal places).
+    """
     # TODO: Implement candidate solution
     pass
-"""
+'''
 
         st.session_state["python_code"] = st.text_area(
             "Write your solutions below:",
